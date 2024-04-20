@@ -1,136 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Summer Olympics Animation</title>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <style>
-    #map {
-      width: 100%;
-      height: 600px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olympic Host Cities Map</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+        .city-circle {
+            fill: steelblue;
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+        .city-circle:hover {
+            fill: orange;
+        }
+    </style>
 </head>
 <body>
-  <!-- Slider for years -->
-  <input type="range" min="1896" max="2020" value="1896" id="yearSlider">
-  <span id="currentYear">1896</span>
+    <svg id="map"></svg>
 
-  <!-- Container for city cards -->
-  <div id="cityCards"></div>
+    <script>
+        // Width and height of the SVG container
+        const width = 1600;
+        const height = 1000;
 
-  <!-- Container for world map -->
-  <svg id="map"></svg>
+        // Append the SVG to the body
+        const svg = d3.select("#map")
+            .attr("width", width)
+            .attr("height", height);
 
-  <script>
-    // Define data for cities
-    const citiesData = [
-    { year: 1896, hostCity: "Athens, Greece", continent: "Europe" },
-      { year: 1900, hostCity: "Paris, France", continent: "Europe" },
-      { year: 1904, hostCity: "St. Louis, United States", continent: "North America" },
-      { year: 1908, hostCity: "London, United Kingdom", continent: "Europe" },
-      { year: 1912, hostCity: "Stockholm, Sweden", continent: "Europe" },
-      { year: 1920, hostCity: "Antwerp, Belgium", continent: "Europe" },
-      { year: 1924, hostCity: "Paris, France", continent: "Europe" },
-      { year: 1928, hostCity: "Amsterdam, Netherlands", continent: "Europe" },
-      { year: 1932, hostCity: "Los Angeles, United States", continent: "North America" },
-      { year: 1936, hostCity: "Berlin, Germany", continent: "Europe" },
-      { year: 1948, hostCity: "London, United Kingdom", continent: "Europe" },
-      { year: 1952, hostCity: "Helsinki, Finland", continent: "Europe" },
-      { year: 1956, hostCity: "Melbourne, Australia", continent: "Australia" },
-      { year: 1960, hostCity: "Rome, Italy", continent: "Europe" },
-      { year: 1964, hostCity: "Tokyo, Japan", continent: "Asia" },
-      { year: 1968, hostCity: "Mexico City, Mexico", continent: "North America" },
-      { year: 1972, hostCity: "Munich, West Germany", continent: "Europe" },
-      { year: 1976, hostCity: "Montreal, Canada", continent: "North America" },
-      { year: 1980, hostCity: "Moscow, Soviet Union", continent: "Europe" },
-      { year: 1984, hostCity: "Los Angeles, United States", continent: "North America" },
-      { year: 1988, hostCity: "Seoul, South Korea", continent: "Asia" },
-      { year: 1992, hostCity: "Barcelona, Spain", continent: "Europe" },
-      { year: 1996, hostCity: "Atlanta, United States", continent: "North America" },
-      { year: 2000, hostCity: "Sydney, Australia", continent: "Australia" },
-      { year: 2004, hostCity: "Athens, Greece", continent: "Europe" },
-      { year: 2008, hostCity: "Beijing, China", continent: "Asia" },
-      { year: 2012, hostCity: "London, United Kingdom", continent: "Europe" },
-      { year: 2016, hostCity: "Rio de Janeiro, Brazil", continent: "South America" },
-      { year: 2020, hostCity: "Tokyo, Japan", continent: "Asia" }
-    ];
+        // Projection for map
+        const projection = d3.geoMercator()
+            .scale(130)
+            .translate([width / 2, height / 1.5]);
 
-    // Create city cards
-    const cityCards = d3.select("#cityCards")
-      .selectAll(".card")
-      .data(citiesData)
-      .enter()
-      .append("div")
-      .attr("class", "card")
-      .text(d => `${d.hostCity} - ${d.year}`);
+        // Path generator
+        const path = d3.geoPath().projection(projection);
 
-    // Function to update city cards based on selected year
-    function updateCityCards(year) {
-      cityCards.style("display", d => (d.year === year ? "inline-block" : "none"));
-    }
+        // Define color scale for continents
+const colorScale = d3.scaleOrdinal()
+    .domain(["Europe", "NorthAmerica", "Asia", "Australia", "SouthAmerica", "Africa"])
+    .range(["#1F77B4", "#ff7f0e", "#2ca02c", "#d62728", "#1F77B4","#8C564B","#D62728", "#FF8F00","#7F7F7F"]);
 
-    // Event listener for slider input
-    d3.select("#yearSlider").on("input", function() {
-      const year = +this.value;
-      d3.select("#currentYear").text(year);
-      updateCityCards(year);
-      // Zoom into the city
-      const city = citiesData.find(d => d.year === year);
-      zoomToCity(city.coordinates);
-    });
+        // Load world map data
+        d3.json("custom.geo.json").then(function (world) {
+            // Draw world map
+            svg.selectAll("path")
+                .data(world.features)
+                .enter().append("path")
+                .attr("d", path)
+                .style("stroke", "#aaa")
+                .style("stroke-width", 0.5)
+                .style("fill", d => colorScale(d.properties.continent)); // Color based on continent
 
-    // Initial update of city cards
-    updateCityCards(1896);
+            // Load Olympic host cities data
+            d3.json("Olympic-cities.json").then(function (cities) {
+                // Draw circles for host cities
+                svg.selectAll("circle")
+                    .data(cities)
+                    .enter().append("circle")
+                    .attr("class", "city-circle")
+                    .attr("cx", d => projection([parseFloat(d.longitude), parseFloat(d.latitude)])[0])
+                    .attr("cy", d => projection([parseFloat(d.longitude), parseFloat(d.latitude)])[1])
+                    .attr("r", 5)
+                    .append("title")
+                    .text(d => d.city + ", " + d.year);
+            });
+        });
 
-    // Define map dimensions
-    const width = 960;
-    const height = 600;
 
-    // Create SVG element for the map
-    const svg = d3.select("#map")
-      .attr("width", width)
-      .attr("height", height);
 
-    // Create projection
-    const projection = d3.geoNaturalEarth1()
-      .scale(200)
-      .translate([width / 2, height / 2]);
-
-    // Create path generator
-    const path = d3.geoPath()
-      .projection(projection);
-
-    // Load world map data
-    d3.json("https://raw.githubusercontent.com/d3/d3.github.com/master/world-110m.v1.json").then(function(world) {
-      // Draw world map
-      svg.append("path")
-        .datum(topojson.feature(world, world.objects.countries))
-        .attr("d", path)
-        .attr("fill", "#eaeaea")
-        .attr("stroke", "#999")
-        .attr("stroke-width", 0.5);
-    });
-
-    // Function to zoom into a city
-    function zoomToCity(coordinates) {
-      const [x, y] = projection(coordinates);
-      svg.transition()
-        .duration(1000)
-        .call(zoom.transform, d3.zoomIdentity.translate(width / 2 - x, height / 2 - y).scale(5));
-    }
-
-    // Define zoom behavior
-    const zoom = d3.zoom()
-      .scaleExtent([1, 8])
-      .on("zoom", function(event) {
-        svg.selectAll("path")
-          .attr("transform", event.transform);
-      });
-
-    // Apply zoom behavior to SVG element
-    svg.call(zoom);
-  </script>
+;
+    </script>
 </body>
 </html>
