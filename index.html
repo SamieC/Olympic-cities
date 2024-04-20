@@ -5,26 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Olympic Host Cities Map</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/canvg/3.0.0/canvg.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/svg2pdf.js/0.2.3/svg2pdf.min.js"></script>
+
+
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: bisque;
         }
         svg {
-            width: 100%;
-            height: 100%;
+            width: 1000%;
+            height: 1000%;
         }
         .city-circle {
-            fill: steelblue;
+            fill: rgb(92, 143, 184);
             stroke: #fff;
             stroke-width: 2px;
         }
         .city-circle:hover {
             fill: orange;
         }
+        .tooltip {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px;
+            border: 1px solid #aaa;
+            border-radius: 5px;
+            pointer-events: none;
+            display: none;
+        }
+        .city-circle-multiple {
+            fill: red;
+        }
     </style>
 </head>
 <body>
+    <h1>Olympic Host Cities</h1>
+    <button onclick="exportToPdf()">Export to PDF</button>
     <svg id="map"></svg>
+    <div class="tooltip" id="tooltip"></div>
+    <button onclick="exportToPdf()">Export to PDF</button>
 
     <script>
         // Width and height of the SVG container
@@ -62,6 +83,8 @@ const colorScale = d3.scaleOrdinal()
 
             // Load Olympic host cities data
             d3.json("Olympic-cities.json").then(function (cities) {
+                            // Group cities by name
+            const cityGroups = d3.group(cities, d => d.city);
                 // Draw circles for host cities
                 svg.selectAll("circle")
                     .data(cities)
@@ -78,6 +101,9 @@ const colorScale = d3.scaleOrdinal()
 
 
 ;
+
     </script>
+
+    
 </body>
 </html>
